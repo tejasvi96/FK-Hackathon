@@ -1,6 +1,10 @@
-nltk==3.4.5
-loguru==0.5.1
-torch==1.5.0+cu92
-pandas==1.0.4
-numpy==1.19.4
-Pillow==8.1.0
+tqdm==4.41.1
+numpy==1.19.5
+opencv_contrib_python==4.1.2.30
+torchvision==0.8.2+cu101
+pandas==1.1.5
+torch==1.7.1+cu101
+loguru==0.5.3
+Pillow==8.1.1
+scikit_learn==0.24.1
+torchnet==0.0.4
