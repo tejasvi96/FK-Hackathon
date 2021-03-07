@@ -2,3 +2,6 @@ checkpoint/flipkart/checkpoint_modified50.pth filter=lfs diff=lfs merge=lfs -tex
 extra/Train90.csv filter=lfs diff=lfs merge=lfs -text
 extra/cat_model.pt filter=lfs diff=lfs merge=lfs -text
 test_submission_full.csv filter=lfs diff=lfs merge=lfs -text
+cat_model.pt filter=lfs diff=lfs merge=lfs -text
+checkpoint_modified50.pth filter=lfs diff=lfs merge=lfs -text
+train90.csv filter=lfs diff=lfs merge=lfs -text
