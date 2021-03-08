@@ -13,7 +13,7 @@ import torch.utils.data as data
 from sklearn.model_selection import train_test_split
 import time
 from tqdm import tqdm
-
+from dataset import *
 parser = argparse.ArgumentParser(description='FK Training')
 parser.add_argument('--data', metavar='DIR',
                     help='path to dataset (e.g. data/')
@@ -25,11 +25,11 @@ parser.add_argument('--epochs', default=60, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--epoch_step', default=[30], type=int, nargs='+',
                     help='number of epochs to change learning rate')
-parser.add_argument('--device_ids', default=[0], type=int, nargs='+',
+parser.add_argument('--device_ids', default=[0,1], type=int, nargs='+',
                     help='number of epochs to change learning rate')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=4, type=int,
+parser.add_argument('-b', '--batch-size', default=48, type=int,
                     metavar='N', help='mini-batch size (default: 256)')
 parser.add_argument('--lr', '--learning-rate', default=0.1, type=float,
                     metavar='LR', help='initial learning rate')
@@ -78,7 +78,7 @@ class CategoryModel(nn.Module):
 #         print(x.shape)
         return x
 
-def main_coco():
+def main_fk():
     torch.cuda.empty_cache()
     global args, best_prec1, use_gpu
     args = parser.parse_args()
@@ -87,25 +87,29 @@ def main_coco():
     
 #     os.environ['CUDA_VISIBLE_DEVICES'] = device
     params={}
-    params['train_file']='./extra/train_data.csv'
+    params['train_file']='./train90_modified.csv'
     params['val_file']='./extra/val_data.csv'
     params['test_file']='./extra/Test_Filenames.csv'
     params['allowed_attrs_file']='./extra/Attribute_allowedvalues.npy'
     params['category_attrs_mapping']='./extra/vertical_attributes.npy'
     params['adj_file']='./extra/p_matrix_complete.npy'
-    params['image_dir']="./test_images"
+    params['train_image_dir']='./train90_images'
+    params['val_image_dir']='./val_images'
+#     params['image_dir']="./test_images"
     params['values_dir']="./extra/values.pkl"
     params['eval_threshold']=0.4
     params['is_training']=True
-    params['cat_model_file']='./extra/cat_model.pt'
+    params['cat_model_file']='./cat_model_res101_SGD.pt'
 
     params['test_file']=args.testnames
     params['image_dir']=args.imagesdir
     use_gpu = torch.cuda.is_available()
     # use_gpu=False
-    train_dataset=Flipkart2021(params['image_dir'],params['train_file'],params['category_attrs_mapping'],params['allowed_attrs_file'],params['values_dir'],params['is_training'])
-    val_dataset=Flipkart2021(params['image_dir'],params['val_file'],params['category_attrs_mapping'],params['allowed_attrs_file'],params['values_dir'],not params['is_training'])
+    # print(params['train_file'])
+    train_dataset=Flipkart2021(params['train_image_dir'],params['train_file'],params['category_attrs_mapping'],params['allowed_attrs_file'],params['values_dir'],params['is_training'])
+    val_dataset=Flipkart2021(params['val_image_dir'],params['val_file'],params['category_attrs_mapping'],params['allowed_attrs_file'],params['values_dir'],not params['is_training'])
     test_dataset=Flipkart2021_eval(params['image_dir'],params['test_file'],params['category_attrs_mapping'],params['allowed_attrs_file'],params['values_dir'],not params['is_training'])
+#     test_dataset = None
 
     # train_dataset = COCO2014(args.data, phase='train', inp_name='data/coco/coco_glove_word2vec.pkl')
     # val_dataset = COCO2014(args.data, phase='val', inp_name='data/coco/coco_glove_word2vec.pkl')
@@ -144,9 +148,12 @@ def main_coco():
     print(args.test)
     state['category_decoding']=category_mapping
     state['value_decoding']=values_obj
-    state['category_attrs_mapping']=train_dataset.category_attribute_map
+    
+    state['category_attrs_mapping']=train_dataset.category_attribute_map.copy()
+#     del state['category_attrs_mapping']['vertical']
+    
     state['attrs_value_mapping']=train_dataset.allowed_values
-    state['threshold']=0.3
+    state['threshold']=0.25
     if args.evaluate:
         # need to load the val_object also if we need to decode
         state['evaluate'] = True
@@ -165,4 +172,4 @@ def main_coco():
     engine.learning(model,cat_model, criterion, train_dataset, val_dataset,test_dataset, optimizer)
 
 if __name__ == '__main__':
-    main_coco()
+    main_fk()

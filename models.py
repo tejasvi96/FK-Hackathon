@@ -39,6 +39,56 @@ class GraphConvolution(nn.Module):
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
 
+# class GCNResnet(nn.Module):
+#     def __init__(self, model, num_classes, in_channel=300, t=0, adj_file=None):
+#         super(GCNResnet, self).__init__()
+#         self.features = nn.Sequential(
+#             model.conv1,
+#             model.bn1,
+#             model.relu,
+#             model.maxpool,
+#             model.layer1,
+#             model.layer2,
+#             model.layer3,
+#             model.layer4,
+#         )
+#         self.num_classes = num_classes
+#         self.pooling = nn.MaxPool2d((24, 8))
+
+#         self.gc1 = GraphConvolution(in_channel, 1024)
+#         self.gc2 = GraphConvolution(1024, 2048)
+#         self.relu = nn.LeakyReLU(0.2)
+
+#         _adj = gen_A(num_classes, t, adj_file)
+#         self.A = Parameter(torch.from_numpy(_adj).float())
+#         # image normalization
+#         self.image_normalization_mean = [0.485, 0.456, 0.406]
+#         self.image_normalization_std = [0.229, 0.224, 0.225]
+
+#     def forward(self, feature, inp):
+#         feature = self.features(feature)
+#         # print(feature.shape)
+#         feature = self.pooling(feature)
+#         feature = feature.view(feature.size(0), -1)
+
+
+#         inp = inp[0]
+#         adj = gen_adj(self.A).detach()
+#         x = self.gc1(inp, adj)
+#         x = self.relu(x)
+#         x = self.gc2(x, adj)
+
+#         x = x.transpose(0, 1)
+#         x = torch.matmul(feature, x)
+#         return x
+
+#     def get_config_optim(self, lr, lrp):
+#         return [
+#                 {'params': self.features.parameters(), 'lr': lr * lrp},
+#                 {'params': self.gc1.parameters(), 'lr': lr},
+#                 {'params': self.gc2.parameters(), 'lr': lr},
+#                 ]
+
 class GCNResnet(nn.Module):
     def __init__(self, model, num_classes, in_channel=300, t=0, adj_file=None):
         super(GCNResnet, self).__init__()
@@ -53,16 +103,12 @@ class GCNResnet(nn.Module):
             model.layer4,
         )
         self.num_classes = num_classes
-        self.pooling = nn.MaxPool2d((12, 8))
-
- 
+        self.pooling = nn.MaxPool2d((3, 7))
 
         self.gc1 = GraphConvolution(in_channel, 1024)
         self.gc2 = GraphConvolution(1024, 2048)
         self.gc3 = GraphConvolution(2048, 4096)
         self.relu = nn.LeakyReLU(0.2)
-
- 
 
         _adj = gen_A(num_classes, t, adj_file)
         self.A = Parameter(torch.from_numpy(_adj).float())
@@ -70,15 +116,14 @@ class GCNResnet(nn.Module):
         self.image_normalization_mean = [0.485, 0.456, 0.406]
         self.image_normalization_std = [0.229, 0.224, 0.225]
 
- 
-
     def forward(self, feature, inp):
         feature = self.features(feature)
-        # print(feature.shape)
+#         print(feature.shape)
+#         print(x.shape)
         feature = self.pooling(feature)
+#         print(feature.shape)
         feature = feature.view(feature.size(0), -1)
-
- 
+        
 
 
         inp = inp[0]
@@ -89,52 +134,9 @@ class GCNResnet(nn.Module):
         x = self.relu(x)
         x = self.gc3(x, adj)
 
- 
-
         x = x.transpose(0, 1)
-        x = torch.matmul(feature, x)
-        return x
-
-"""class GCNResnet(nn.Module):
-    def __init__(self, model, num_classes, in_channel=300, t=0, adj_file=None):
-        super(GCNResnet, self).__init__()
-        self.features = nn.Sequential(
-            model.conv1,
-            model.bn1,
-            model.relu,
-            model.maxpool,
-            model.layer1,
-            model.layer2,
-            model.layer3,
-            model.layer4,
-        )
-        self.num_classes = num_classes
-        self.pooling = nn.MaxPool2d((24, 8))
-
-        self.gc1 = GraphConvolution(in_channel, 1024)
-        self.gc2 = GraphConvolution(1024, 2048)
-        self.relu = nn.LeakyReLU(0.2)
-
-        _adj = gen_A(num_classes, t, adj_file)
-        self.A = Parameter(torch.from_numpy(_adj).float())
-        # image normalization
-        self.image_normalization_mean = [0.485, 0.456, 0.406]
-        self.image_normalization_std = [0.229, 0.224, 0.225]
-
-    def forward(self, feature, inp):
-        feature = self.features(feature)
-        # print(feature.shape)
-        feature = self.pooling(feature)
-        feature = feature.view(feature.size(0), -1)
-
-
-        inp = inp[0]
-        adj = gen_adj(self.A).detach()
-        x = self.gc1(inp, adj)
-        x = self.relu(x)
-        x = self.gc2(x, adj)
-
-        x = x.transpose(0, 1)
+#         print(feature.shape)
+#         print(x.shape)
         x = torch.matmul(feature, x)
         return x
 
@@ -144,7 +146,8 @@ class GCNResnet(nn.Module):
                 {'params': self.gc1.parameters(), 'lr': lr},
                 {'params': self.gc2.parameters(), 'lr': lr},
                 ]
-"""
+
+
 
 
 def gcn_resnet101(num_classes, t, pretrained=False, adj_file=None, in_channel=300):

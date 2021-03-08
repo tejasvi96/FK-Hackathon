@@ -184,6 +184,7 @@ class Engine(object):
         val_loader = torch.utils.data.DataLoader(val_dataset,
                                                  batch_size=self.state['batch_size'], shuffle=False,
                                                  num_workers=self.state['workers'])
+        
         test_loader = torch.utils.data.DataLoader(test_dataset,
                                                  batch_size=self.state['batch_size'], shuffle=False,
                                                  num_workers=self.state['workers'])
@@ -217,53 +218,73 @@ class Engine(object):
 #             list_of_devices=[0,1,2,3]
 #            model = torch.nn.DataParallel(model, device_ids=list_of_devices).cuda()
             
-#             map_location={'cuda:4':'cuda:0','cuda:5':'cuda:1','cuda:6':'cuda:2','cuda:7':'cuda:3'}
+            map_location={'cuda:4':'cuda:0','cuda:5':'cuda:1','cuda:6':'cuda:2','cuda:7':'cuda:3'}
     
-            # pretrained_dict=torch.load(self.state['cat_model_file'],map_location='cuda:0')
-            pretrained_dict=torch.load(self.state['cat_model_file'],map_location='cpu')
+            pretrained_dict=torch.load(self.state['cat_model_file'],map_location=map_location)
+#             pretrained_dict=torch.load(self.state['cat_model_file'],map_location='cpu')
 #             pretrained_dict=torch.load(self.state['cat_model_file'])
             pretrained_dict = {key.replace("module.", ""): value for key, value in pretrained_dict.items()}
             
             
             
             model_cat.load_state_dict(pretrained_dict)
-#            model_cat = torch.nn.DataParallel(model_cat, device_ids=list_of_devices).cuda()
-            model_cat.to('cpu').eval()
-            model=model.to('cpu')
-#            criterion = criterion.cuda()
+            
+            print(model)
+            if not self.state['use_gpu']:
+                model_cat.to('cpu').eval()
+                model=model.to('cpu')
+                criterion = criterion.cuda()
+            else:
+                model_cat = torch.nn.DataParallel(model_cat, device_ids=list_of_devices).cuda()
+                model = torch.nn.DataParallel(model, device_ids=list_of_devices).cuda()
+    
+#             criterion = criterion.cuda()
         if self.state['testing']:
             prec1=self.evaluate(test_loader, model,model_cat, criterion)
             print("Evaluation Scores: "+str(prec1)) 
-            return            
-        if self.state['evaluate']:
-            prec1=self.validate(val_loader, model, criterion)
-            print("Evaluation Scores: "+str(prec1)) 
-            return
+            return         
+        
+#         if self.state['evaluate']:
+#             prec1=self.validate(val_loader, model, criterion)
+#             print("Evaluation Scores: "+str(prec1)) 
+#             return
 
         # TODO define optimizer
 #         prec1 = self.validate(val_loader, model, criterion)
-        
+        prec1_old=0.0
         for epoch in range(self.state['start_epoch'], self.state['max_epochs']):
             self.state['epoch'] = epoch
             lr = self.adjust_learning_rate(optimizer)
             print('lr:',lr)
+            
 
             # train for one epoch
             self.train(train_loader, model, criterion, optimizer, epoch)
             # evaluate on validation set
-#             prec1 = self.validate(val_loader, model, criterion)
-#             print("Scores--",str(prec1))
+            prec1 = self.validate(val_loader, model, criterion)
+            
+            print(prec1)
+            logger.info("Epoch: "+str(epoch)+": Scores--"+str(prec1))
             # remember best prec@1 and save checkpoint
 #             is_best = prec1 > self.state['best_score']
 #             self.state['best_score'] = max(prec1, self.state['best_score'])
-            if (epoch+1)%5==0:
+            if prec1>prec1_old or (epoch+1)%2==0:
                 self.save_checkpoint({
                     'epoch': epoch + 1,
                     'arch': self._state('arch'),
                     'state_dict': model.module.state_dict() if self.state['use_gpu'] else model.state_dict(),
     #                 'best_score': self.state['best_score'],
-                }, False, filename=f'checkpoint_modified{epoch+1}.pth')
-
+                    },
+                    False,
+                    filename=f'checkpoint_modified{epoch+1}.pth')
+            
+#             if  (epoch+1)%5==0:
+#                 self.state['testing']=True
+#                 prec2=self.evaluate(test_loader, model,model_cat, criterion,prec1)
+#                 print("Evaluation Scores: "+str(prec2))
+#                 self.state['testing']=False
+                
+            prec1_old = prec1   
             print(' *** best={best:.3f}'.format(best=self.state['best_score']))
         return self.state['best_score']
 
@@ -280,6 +301,8 @@ class Engine(object):
         end = time.time()
         for i, (input, target) in enumerate(data_loader):
             # measure data loading time
+#             if i==2:
+#                 break
             self.state['iteration'] = i
             self.state['data_time_batch'] = time.time() - end
             self.state['data_time'].add(self.state['data_time_batch'])
@@ -351,8 +374,11 @@ class Engine(object):
 
         end = time.time()
         scores=[]
+        
         with torch.no_grad():
             for i, (input, target,cat) in enumerate(data_loader):
+#                 if i==2:
+#                     break
                 attrs=[ast.literal_eval(item) for item in input[1]]
                 # measure data loading time
                 self.state['iteration'] = i
@@ -360,7 +386,7 @@ class Engine(object):
                 self.state['data_time'].add(self.state['data_time_batch'])
 #                 print(attrs)
     #             exit()
-
+#                 input=input.to('')
                 self.state['input'] = input
                 self.state['target'] = target
 
@@ -376,7 +402,7 @@ class Engine(object):
                                             cat,self.state['output'])
                 predictions=get_outputs(self.state['category_attrs_mapping'],
                                                 self.state['attrs_value_mapping'],
-                                                cats,values)
+                                                cats,values,self.state['value_decoding'])
 #                 print("+++")
 #                 print(attrs)
 #                 print("------")
@@ -397,7 +423,7 @@ class Engine(object):
         # score = self.on_end_epoch(False, model, criterion, data_loader)
 
         return sum(scores)/len(scores)
-    def evaluate(self, data_loader, model,model_cat, criterion):
+    def evaluate(self, data_loader, model,model_cat, criterion,val_loss=None):
         logger.info("In evaluate")
 
         # switch to evaluate mode
@@ -412,8 +438,12 @@ class Engine(object):
         scores=[]
         preds=[]
         filenames=[]
+        catlist=[]
+        value_list = []
         with torch.no_grad():
             for i, (input) in enumerate(data_loader):
+#                 if i==2:
+#                     break
                 if self.state['use_gpu']:
                   input[0]=input[0].to('cuda')
 
@@ -447,10 +477,18 @@ class Engine(object):
                                             self.state['value_decoding'],
                                             self.state['category_decoding'],
                                             cat,self.state['output'])
+#                 catlist=[[i] for i in cats]
+            
+#                 catlist.append(cats)
+#                 value_list.append(values)
+                
 
+#                 predictions=get_outputs(self.state['category_attrs_mapping'],
+#                                                 self.state['attrs_value_mapping'],
+#                                                 cats,values,self.state['value_decoding'])
                 predictions=get_outputs(self.state['category_attrs_mapping'],
                                                 self.state['attrs_value_mapping'],
-                                                cats,values)
+                                                cats,values,self.state['value_decoding'])
     #                 print("+++")
     #                 print(attrs)
     #                 print("------")
@@ -467,7 +505,7 @@ class Engine(object):
                 n_items=len(predictions)
 
                 for t in range(n_items):
-                  predictions[t]['vertical']=cats[t]
+                  predictions[t]['vertical']=[cats[t]]
 #                 exit()
 #                 predictions['vertical']=cats[0]
                 preds.append(predictions)
@@ -487,15 +525,23 @@ class Engine(object):
 
         # score = self.on_end_epoch(False, model, criterion, data_loader)
         import pandas as pd
+        
         filenames = [f for sublist in filenames for f in sublist]
         preds = [f for sublist in preds for f in sublist]
+#         probs = [f for sublist in value_list for f in sublist]
+#         cats = [f for sublist in catlist for f in sublist]
+        
         data=pd.DataFrame()
         data["filename"]=filenames
         data["predictions"]=preds
+#         data['cat']=cats
+#         data['probs']=probs
         file_names=self.state['output_file']
+        val_loss=0.000
+        file_names=file_names.split('.csv')[0]+str(round(val_loss,3)).replace('.','_')+".csv"
         data.to_csv(file_names,index=False)
         return 0
-#         return sum(scores)/len(scores)
+
     def save_checkpoint(self, state, is_best, filename='checkpoint.pth.tar'):
 
         if self._state('save_model_path') is not None:
@@ -634,6 +680,8 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         testing=self.state['testing']
         # featute_var=feature_var.to('cuda')
         # inp_var=inp_var.to('cuda')
+#         print(feature_var.shape)
+#         print
         self.state['output'] = model(feature_var, inp_var)
         # testing=True
         if not testing:
@@ -661,4 +709,3 @@ class GCNMultiLabelMAPEngine(MultiLabelMAPEngine):
         self.state['feature'] = input[0]
         self.state['out'] = input[1]
         self.state['input'] = input[2]
-

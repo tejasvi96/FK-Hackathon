@@ -1,11 +1,12 @@
-torch==1.5.0+cu92
-tqdm==4.46.1
-~pencv_python==4.2.0.32
+torchvision==0.6.0+cu92
 nltk==3.4.5
-pandas==1.0.4
 numpy==1.19.4
 loguru==0.5.1
-torchvision==0.6.0+cu92
+tqdm==4.46.1
+pandas==1.0.4
+opencv_python==4.2.0.32
+torch==1.5.0+cu92
+coco==0.4.0
 Pillow==8.1.2
 scikit_learn==0.24.1
 torchnet==0.0.4
