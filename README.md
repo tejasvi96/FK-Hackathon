@@ -1,11 +1,12 @@
 # FK-Hackathon
 Flipkart hackathon submission
 
-To do inference set the **imagesdir** parameter which should point to the directory where all the images for testing are present, set the **testnames** parameter also to refer to the .csv file for reading the filenames for generating predictions. The output file will be generated based on the value of the **output_file** parameter.
- 
+Clone the repo and run the following to install all the dependencies.
+
 ``` pip install -r requirements.txt ``` 
 
-to install all the dependencies.
+To do inference set the **imagesdir** parameter which should point to the directory where all the images for testing are present, set the **testnames** parameter also to refer to the .csv file for reading the filenames for generating predictions. The output file will be generated based on the value of the **output_file** parameter.
+ 
 
 To use the code for inference
 
