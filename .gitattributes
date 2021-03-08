@@ -6,3 +6,4 @@ cat_model.pt filter=lfs diff=lfs merge=lfs -text
 checkpoint_modified50.pth filter=lfs diff=lfs merge=lfs -text
 train90.csv filter=lfs diff=lfs merge=lfs -text
 cat_model_res101_SGD.pt filter=lfs diff=lfs merge=lfs -text
+checkpoint_modified42.pth filter=lfs diff=lfs merge=lfs -text

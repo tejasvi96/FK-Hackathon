@@ -9,7 +9,7 @@ to install all the dependencies.
 
 To use the code for inference
 
-```python demo_fk_gcn.py -t --resume './checkpoint_modified50.pth' --imagesdir "./test_images" --testnames "./extra/Test_Filenames.csv" --output_file "./outputs.csv" ```
+```python demo_fk_gcn.py -t --resume './checkpoint_modified42.pth' --imagesdir "./test_images" --testnames "./extra/Test_Filenames.csv" --output_file "./outputs.csv" ```
 
 If cuda is available , then by default it will run on gpu, if not then on cpu.
 
