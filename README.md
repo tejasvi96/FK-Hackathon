@@ -10,9 +10,9 @@ To do inference set the **imagesdir** parameter which should point to the direct
 
 To use the code for inference
 
-```python demo_fk_gcn.py -t --resume './checkpoint_modified42.pth' --imagesdir "./test_images" --testnames "./extra/Test_Filenames.csv" --output_file "./outputs.csv" ```
+```python demo_fk_gcn.py -t --resume './checkpoint_modified42.pth' --imagesdir "./test_images" --testnames "./extra/Test_Filenames.csv" --output_file "./outputs.csv" --device_ids=[0,1,2,3] ```
 
-If cuda is available , then by default it will run on gpu, if not then on cpu.
+If cuda is available set the **device_ids** parameter mapping the cuda device ids , then by default it will run on gpu, if not then on cpu.
 
 
 # References
