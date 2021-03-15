@@ -164,7 +164,8 @@ class Flipkart2021(data.Dataset):
 	def transform(self, image: np.array):
 		image = self.crop_or_pad1(image)
 		image = self.normalise(image)
-		image = cv2.resize(image, (224, 224))
+		#image = cv2.resize(image, (224, 224))
+		image = cv2.resize(image, (256, 768))
 		image = image.transpose(2,0,1)
 # 		print(image.shape)    
 		return image
@@ -302,7 +303,8 @@ class Flipkart2021_eval(data.Dataset):
 	def transform(self, image: np.array):
 		image = self.crop_or_pad1(image)
 		image = self.normalise(image)
-		image = cv2.resize(image, (224, 224))
+		#image = cv2.resize(image, (224, 224))
+		image = cv2.resize(image, (256, 768))
 		image = image.transpose(2,0,1)
 # 		print(image.shape)    
 		return image

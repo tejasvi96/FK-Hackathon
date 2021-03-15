@@ -103,7 +103,8 @@ class GCNResnet(nn.Module):
             model.layer4,
         )
         self.num_classes = num_classes
-        self.pooling = nn.MaxPool2d((3, 7))
+        # self.pooling = nn.MaxPool2d((3, 7))
+        self.pooling = nn.MaxPool2d((12, 8))
 
         self.gc1 = GraphConvolution(in_channel, 1024)
         self.gc2 = GraphConvolution(1024, 2048)
